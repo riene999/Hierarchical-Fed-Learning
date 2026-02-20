@@ -1,105 +1,34 @@
-## Environments
+### Top-Level Files & Directories
+* **`main.py`**: The main experiment entry point. Handles command-line argument parsing, training scheduling, global weight aggregation (`average_weights`), logging, and result saving.
+* **`README.md`**: Project documentation, including environment setup, usage examples, and experimental results.
+* **`plots/`**: Contains Jupyter notebooks (`.ipynb`) and `plot_utils.py` for comprehensive data analysis and result visualization.
+* **`maps/`**: Project mapping and auxiliary configuration files.
+> *Note: The root directory also contains various non-code resources, such as network packet captures (`.pcapng`).*
 
-Fashion-MNIST is on 4090, CIFAR-10 is on 7003, CINIC-10 is on 7004.
+---
 
-4090, NVIDA-SMI 535.154.05, nvcc release 12.2, cudnn V12.2.140, 8.9.7, Python 3.10.10, torch 2.0.0+cu118, torchaudio 2.0.1+cu118, torchvision 0.15.1+cu118
+### Core Codebase (`sim/`)
+The `sim/` directory houses the core simulation logic, divided into four main modules:
 
-7003, NVIDA-SMI 535.129.03, nvcc release 12.2, cudnn V12.2.140, 8.9.7, Python 3.10.10, torch 2.0.0+cu118, torchaudio 2.0.1+cu118, torchvision 0.15.1+cu118
+#### 1. `algorithms/` (Learning Strategies)
+* **`fedbase.py` & `fedbase2.py`**: Federated Learning base classes. Includes the core implementations and training/evaluation loops for `FedClient`, `FedGroup`, and `FedServer`.
+* **`splitbase.py`**: Base classes designed for Split Learning methodologies.
+* **`cwtbase.py`**: Base classes for CWT-related algorithmic variations.
 
-7004, NVIDA-SMI 545.29.06, nvcc release 12.2, cudnn V12.2.140, 8.9.7, Python 3.10.10, torch 2.0.0+cu118, torchaudio 2.0.1+cu118, torchvision 0.15.1+cu118
+#### 2. `data/` (Data Handling & Partitioning)
+* **`data_utils.py`**: Dataset wrappers and data processing utility functions, including `FedDataset`.
+* **`datasets.py` & `datasets_LR.py`**: Interfaces for constructing and loading various datasets (e.g., via `build_dataset`).
+* **`partition.py`, `partition_LR.py`, `partition_SST2.py`, & `raw_partition/`**: Contains the logic for data partitioning and non-IID distribution strategies across clients (e.g., IID, Dirichlet, `group_dir`, `exdir`).
 
-## SSH Commands
+#### 3. `models/` (Neural Network Architectures)
+* **`build_models.py`**: Factory functions to dynamically instantiate models by name (`build_model`).
+* **`model_utils.py`**: General model-related utility functions.
+* **Model Implementations**: Various network architectures tailored for specific datasets, such as `cifar_cnn.py`, `cifar_resnetii.py`, `mnist_wvgg.py`, `sst2_mlp.py`, and others.
 
-```
-scp -r /home/moon/data/exps/SFL/sim liyp@10.21.165.59:/home/liyp/exps/SFL/
-scp -r liyp@10.21.165.59:/home/liyp/exps/SFL/save/* /home/moon/data/exps/SFL/save/fashionmnist
-```
-
-```
-scp -r -P 7003 /home/moon/data/exps/SFL/sim liyp@62.234.173.13:/home/liyp/exps/SFL/
-scp -P 7003 liyp@62.234.173.13:/home/liyp/exps/SFL/save/* /home/moon/data/exps/SFL/save/cifar10/
-```
-
-## Commands
-
-Test example
-
-```
-nohup python main_fedavg.py -M 500 -P 10 -K 2 -R 20 --eval-every 10 -m logistic -d mnist --partition exdir --alpha 1 100.0 --optim sgd --lr 0.1 --momentum 0.0 --weight-decay 0.0 --lr-scheduler exp --lr-decay 1.0 --batch-size 20 --seed 0 --clip 10 --log warning+log --device 0 &
-```
-
-## Results
-
-Fashion-MNIST, R, 2000, M, 500, seeds, 0,1,2,3,4
-
-CIFAR-10, R, 5000, M, 500, seeds, 0,1,2
-
-CINIC-10, R, 5000, M, 1000, seeds, 0,1,2
-
-We use clip=10 for main_fedavg.py and clip=50 for main_cwt.py.
-
-Other settings that are not specified, we consider all possible values, e.g., K, alpha, lr.
-
-```
-nohup python {main_fedavg.py,main_cwt.py} -m wvgg9k4 -d {cifar-10} -R 5000 -K {5,20} -M {500,1000} -P 10 --partition exdir --alpha {1,2,5} 100 --optim sgd --lr {0.00316, 0.01, 0.0316, 0.1, 0.316} --momentum 0 --weight-decay 0.0 --lr-scheduler exp --lr-decay 1.0 --batch-size 20 --seed 0 --eval-every 10 --clip {10,50} --log warning+log --device 0 &
-```
-
-### Fashion-MNIST
-
-```
-"FedAvg1.0_M500,10_K5_R2000,10_cnn_fashionmnist_exdir1,100.0_sgd0.1,0.0,0.0_exp1.0_b20_seed0_clip10",
-"CWT_M500,10_K5_R2000,10_cnn_fashionmnist_exdir1,100.0_sgd0.01,0.0,0.0_exp1.0_b20_seed0_clip50",
-
-"FedAvg1.0_M500,10_K5_R2000,10_cnn_fashionmnist_exdir2,100.0_sgd0.1,0.0,0.0_exp1.0_b20_seed0_clip10",
-"CWT_M500,10_K5_R2000,10_cnn_fashionmnist_exdir2,100.0_sgd0.01,0.0,0.0_exp1.0_b20_seed0_clip50",
-
-"FedAvg1.0_M500,10_K5_R2000,10_cnn_fashionmnist_exdir5,100.0_sgd0.1,0.0,0.0_exp1.0_b20_seed0_clip10",
-"CWT_M500,10_K5_R2000,10_cnn_fashionmnist_exdir5,100.0_sgd0.01,0.0,0.0_exp1.0_b20_seed0_clip50",
-```
-
-| Fashion-MNIST | PFL         | SFL         | Fig                                                |
-| -------- | ----------- | ----------- | -------------------------------------------------- |
-| C=1      | 87.16 86.27 | 89.39 88.09 | <img src="figs/2024-03-28_11-14-13.png" width=800> |
-| C=2      | 89.65 88.45 | 91.37 89.74 | <img src="figs/2024-03-28_11-15-52.png" width=800> |
-| C=5      | 92.32 90.75 | 92.91 91.07 | <img src="figs/2024-03-28_11-10-32.png" width=800> |
-
-### CIFAR-10
-
-```
-"FedAvg1.0_M500,10_K5_R5000,10_wvgg9k4_cifar10_exdir1,100.0_sgd0.1,0.0,0.0_exp1.0_b20_seed0_clip10",
-"CWT_M500,10_K5_R5000,10_wvgg9k4_cifar10_exdir1,100.0_sgd0.01,0.0,0.0_exp1.0_b20_seed0_clip50",
-
-"FedAvg1.0_M500,10_K5_R5000,10_wvgg9k4_cifar10_exdir2,100.0_sgd0.1,0.0,0.0_exp1.0_b20_seed0_clip10",
-"CWT_M500,10_K5_R5000,10_wvgg9k4_cifar10_exdir2,100.0_sgd0.01,0.0,0.0_exp1.0_b20_seed0_clip50",
-
-"FedAvg1.0_M500,10_K5_R5000,10_wvgg9k4_cifar10_exdir5,100.0_sgd0.1,0.0,0.0_exp1.0_b20_seed0_clip10",
-"CWT_M500,10_K5_R5000,10_wvgg9k4_cifar10_exdir5,100.0_sgd0.01,0.0,0.0_exp1.0_b20_seed0_clip50",
-```
-| CIFAR-10 | PFL         | SFL         | Fig                                                |
-| -------- | ----------- | ----------- | -------------------------------------------------- |
-| C=1      | 76.48 73.84 | 89.60 81.05 | <img src="figs/2024-03-28_11-18-33.png" width=800> |
-| C=2      | 85.92 78.99 | 94.01 83.34 | <img src="figs/2024-03-28_11-19-40.png" width=800> |
-| C=5      | 94.55 83.47 | 96.72 84.73 | <img src="figs/2024-03-28_11-20-48.png" width=800> |
-
-
-### CINIC-10
-
-```
-"FedAvg1.0_M1000,10_K5_R5000,10_wvgg9k4_cinic10_exdir1,100.0_sgd0.1,0.0,0.0_exp1.0_b20_seed0_clip10",
-"CWT_M1000,10_K5_R5000,10_wvgg9k4_cinic10_exdir1,100.0_sgd0.01,0.0,0.0_exp1.0_b20_seed0_clip50",
-
-"FedAvg1.0_M1000,10_K5_R5000,10_wvgg9k4_cinic10_exdir2,100.0_sgd0.1,0.0,0.0_exp1.0_b20_seed0_clip10",
-"CWT_M1000,10_K5_R5000,10_wvgg9k4_cinic10_exdir2,100.0_sgd0.01,0.0,0.0_exp1.0_b20_seed0_clip50",
-
-"FedAvg1.0_M1000,10_K5_R5000,10_wvgg9k4_cinic10_exdir5,100.0_sgd0.1,0.0,0.0_exp1.0_b20_seed0_clip10",
-"CWT_M1000,10_K5_R5000,10_wvgg9k4_cinic10_exdir5,100.0_sgd0.01,0.0,0.0_exp1.0_b20_seed0_clip50",
-```
-
-| CINIC-10 | PFL         | SFL         | Fig                                                |
-| -------- | ----------- | ----------- | -------------------------------------------------- |
-| C=1      | 53.36 52.27 | 65.40 61.52 | <img src="figs/2024-03-28_14-12-43.png" width=800> |
-| C=2      | 65.38 61.96 | 73.58 67.31 | <img src="figs/2024-03-28_14-13-17.png" width=800> |
-| C=5      | 74.97 68.45 | 79.58 70.82 | <img src="figs/2024-03-28_14-14-17.png" width=800> |
+#### 4. `utils/` (Helper Functions)
+* **`optim_utils.py`**: Wrappers for optimizers and learning rate schedulers (`OptimKit`, `LrUpdater`).
+* **`record_utils.py`**: Tools for experiment tracking, logging configuration, and result serialization (`record_exp_result`, `logconfig`).
+* **`utils.py`**: General helper functions, such as initializing random seeds for reproducibility.
 
 
 
